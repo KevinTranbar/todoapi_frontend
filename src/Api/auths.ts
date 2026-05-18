@@ -45,3 +45,18 @@ export async function logout(): Promise<void> { //Don't check res since even if 
         body: JSON.stringify({ refreshToken })
     });
 }
+/*
+1. Token rotation:
+   → Each use revokes old token
+   → Detects if stolen token was used
+   → Alarm for user and developers
+
+2. Clear on login:
+   → Kills ALL old tokens including stolen ones
+   → Attacker window = only between improper logout and next login
+
+3. Clear on logout:
+   → Explicit cleanup
+   → No tokens left in DB after proper logout
+   → Zero attack window after proper logout
+*/

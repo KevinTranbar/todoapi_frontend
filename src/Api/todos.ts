@@ -4,21 +4,15 @@ import { refreshToken } from './auths';
 const API_BASE_URL = 'http://localhost:8080/api/todos';
 
 let isRefreshing = false; //Flag to prevent multiple simultaneous token refreshes
-let retryQueue: Array<{ //Req that send while isRefreshing is true will be added to this queue and resolved/rejected after token refresh attempt finishes
+let retryQueue: Array<{ //Why need queue? = Stopps multiple failed API calls from attemting refresh process at same time --> would lead to forcelogout even though first refresh attempt succeeded
     resolve: () => void;
     reject: () => void;
 }> = []; //Queue to hold API calls that fail during token refresh
-//Why queue in first place?
-//If multiple API calls made at same time, first one --> 401 --> Token refresh starts --> Other calls made while token refresh ongoing = Access token still invalid since refresh not done yet --> Fail
-//Queue prevents the next calls from going through because token already known to be invalid, until new token recived from first 401, and then retry req with new token
-
-//retryQueue holds objects with 2 methods: resolve and reject (holds the methods not the promise)
-//Methods not defined yet --> defined when object is added to queue
-//Below = Resolve means to try again, reject means to return error
-
-//retryQueue holds references to methods of objects in queue so that those methods can be called in processQueue and the promises can get their value back to caller
-//Basically the retryQueue holds the methods for resolving or rejecting the promises that are waiting in queue, not in the retryQueue array but are waiting by caller
-//retryQueue doesn't hold the actual promises. The promises are just in waiting for processQueue to return value so that a value can be returned to caller
+//retryQueue holds pre-saved resolve / reject methods for each stopped API call
+//resolve = represents the refresh success path (retry original API call with new token)
+//reject = fail the suspended Promise (failiure path)
+//processQueue activates one of the two for each stopped call depending on if refresh attempt failed or succeeded
+//retryQueue doesn't hold the actual promises. The promises are just the suspended API calls, waiting for processQueue to activate the promise's resolve or reject method
 
 //Flow:
 //1. Wrap every API req in 401 check
@@ -31,6 +25,14 @@ let retryQueue: Array<{ //Req that send while isRefreshing is true will be added
 //How does value from processQueue's reject or resolve, find its way back to rightful promise?
 //Pre-saved method from each promise in wait in retryQueue are connected to respecitve promise
 //Basically = The method in the queue holds a direct reference to the Promise's resolve via closure --> calling the method automatically feeds the value back into the Promise (When method called, value redirected to promise)
+
+//Queue summerised:
+//Stop — a refresh attempt is ongoing
+//Wait here until refresh finishes (suspended Promise = "you will get a value eventually")
+//In the meantime, we'll save your order (resolve/reject methods) in retryQueue
+//When refresh finishes, we'll have processQueue activates your saved methods
+//resolve = retry your original API call → get response → return value to your caller
+//reject  = fail your Promise → return error to your caller
 
 function buildAuthHeaders(): HeadersInit { //HeadersInit type for fetch headers
     const token = localStorage.getItem('token'); //Get token from local storage (Assuming token is stored there after login)
@@ -68,12 +70,8 @@ async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
             throw new Error('Unauthorized');
         }
 
-        if (isRefreshing) { //If refresh process ongoing, send waiting API calls to queue to be resolved or rejected after refresh finsishes
-            return new Promise((promResolve, promReject) => { //Creates promise for caller (one that called API which got put in queue) 
-                //Example: const res = await(<--) apiFetch = The caller waits for a response, we return a promise to them that they will get something back eventually
-                //We define resolve and reject method to save in retryQueue. When methods called in processQueue the caller finally gets response
-                //Save methods to queue so that we have a reference of what to do when processQueue activated 
-                //Basically = Save preplanned methods in retryQueue --> return new promise to caller -> refresh finishes --> procesQueue fires --> resolve (retry fires --> caller gets response) OR reject (promise failes --> caller get error)
+        if (isRefreshing) { //If refresh process ongoing, suspend API calls and pre-save their resolve / reject methods to get called by processQueue
+            return new Promise((promResolve, promReject) => { //Creates promise for caller (one that called API which got put in queue)  //Basically suspends API call ("You will get a value back eventually")
                 retryQueue.push({ //Save resolve and reject methods for this promise in the queue so they can be called in processQueue after refresh attempt finishes
                     resolve: () => promResolve(apiFetch(url, options)), //Resolve method for this promise means to resolve promise (promResolve) by doing apiFetch(url, options) (retrying original call)
                     reject: promReject //Reject method for this promise means to reject promise (promReject)
@@ -81,7 +79,7 @@ async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
             });
         }
 
-        isRefreshing = true; //Set refreshing flag to true to block other API calls while we attempt to refresh token
+        isRefreshing = true;
 
         try { //Attemt refresh 
             const response = await refreshToken(); //Try to refreshToken, returns object with accesstoken and refreshtoken
