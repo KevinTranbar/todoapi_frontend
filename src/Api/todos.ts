@@ -20,6 +20,13 @@ let retryQueue: Array<{ //Req that send while isRefreshing is true will be added
 //Basically the retryQueue holds the methods for resolving or rejecting the promises that are waiting in queue, not in the retryQueue array but are waiting by caller
 //retryQueue doesn't hold the actual promises. The promises are just in waiting for processQueue to return value so that a value can be returned to caller
 
+//Flow:
+//1. Wrap every API req in 401 check and some more
+//2. Send API req --> if 401, check if problem being resolved (isRefreshing = true)
+//3. Pre-save the method (API req) you needed to retryQueue
+//4. When problem resolved (refreshing = false) --> processQueue
+//5. processQueue --> Activates pre-saved methods in retryQueue --> Retry API req
+
 //How does value from processQueue's reject or resolve, find its way back to rightful promise?
 //Pre-saved method from each promise in wait in retryQueue are connected to respecitve promise
 //Basically = The method in the queue holds a direct reference to the Promise's resolve via closure --> calling the method automatically feeds the value back into the Promise (When method called, value redirected to promise)
