@@ -4,7 +4,7 @@ import { refreshToken } from './auths';
 const API_BASE_URL = 'http://localhost:8080/api/todos';
 
 let isRefreshing = false; //Flag to prevent multiple simultaneous token refreshes
-let failedQueue: Array<{ //Req that send while isRefreshing is true will be added to this queue and resolved/rejected after token refresh attempt finishes
+let retryQueue: Array<{ //Req that send while isRefreshing is true will be added to this queue and resolved/rejected after token refresh attempt finishes
     resolve: () => void;
     reject: () => void;
 }> = []; //Queue to hold API calls that fail during token refresh
@@ -12,16 +12,16 @@ let failedQueue: Array<{ //Req that send while isRefreshing is true will be adde
 //If multiple API calls made at same time, first one --> 401 --> Token refresh starts --> Other calls made while token refresh ongoing = Access token still invalid since refresh not done yet --> Fail
 //Queue prevents the next calls from going through because token already known to be invalid, until new token recived from first 401, and then retry req with new token
 
-//failedQueue holds objects with 2 methods: resolve and reject
+//retryQueue holds objects with 2 methods: resolve and reject (holds the methods not the promise)
 //Methods not defined yet --> defined when object is added to queue
 //Below = Resolve means to try again, reject means to return error
 
-//failedQueue holds references to methods of objects in queue so that those methods can be called in processQueue and the promises can get their value back to caller
-//Basically the failedQueue holds the methods for resolving or rejecting the promises that are waiting in queue, not in the failedQueue array but are waiting by caller
-//failedQueue doesn't hold the actual promises. The promises are just in waiting for processQueue to return value so that a value can be returned to caller
+//retryQueue holds references to methods of objects in queue so that those methods can be called in processQueue and the promises can get their value back to caller
+//Basically the retryQueue holds the methods for resolving or rejecting the promises that are waiting in queue, not in the retryQueue array but are waiting by caller
+//retryQueue doesn't hold the actual promises. The promises are just in waiting for processQueue to return value so that a value can be returned to caller
 
 //How does value from processQueue's reject or resolve, find its way back to rightful promise?
-//Pre-saved method from each promise in wait in failedQueue are connected to respecitve promise
+//Pre-saved method from each promise in wait in retryQueue are connected to respecitve promise
 //Basically = The method in the queue holds a direct reference to the Promise's resolve via closure --> calling the method automatically feeds the value back into the Promise (When method called, value redirected to promise)
 
 function buildAuthHeaders(): HeadersInit { //HeadersInit type for fetch headers
@@ -32,15 +32,15 @@ function buildAuthHeaders(): HeadersInit { //HeadersInit type for fetch headers
     };
 }
 
-function processQueue(error: unknown) { //Helper function to process the failedQueue after token refresh attemt finishes
-    failedQueue.forEach(prom => { //Loops through failedQueue to either call the resolve methods of waiting promises or reject methods of waiting promises
+function processQueue(error: unknown) { //Helper function to process the retryQueue after token refresh attemt finishes
+    retryQueue.forEach(prom => { //Loops through retryQueue to either call the resolve methods of waiting promises or reject methods of waiting promises
         if (error) {
             prom.reject(); //If refresh failed and error was returned, call reject methods for all waiting promises
         } else {
             prom.resolve(); //If refresh successful and no error, call resolve methods for all waiting promises
         }
     });
-    failedQueue = []; //Clear the queue after processing
+    retryQueue = []; //Clear the queue after processing
 }
 
 async function apiFetch(url: string, options?: RequestInit): Promise<Response> { //RequestInit type for fetch options
@@ -63,10 +63,10 @@ async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
         if (isRefreshing) { //If refresh process ongoing, send waiting API calls to queue to be resolved or rejected after refresh finsishes
             return new Promise((promResolve, promReject) => { //Creates promise for caller (one that called API which got put in queue) 
                 //Example: const res = await(<--) apiFetch = The caller waits for a response, we return a promise to them that they will get something back eventually
-                //We define resolve and reject method to save in failedQueue. When methods called in processQueue the caller finally gets response
+                //We define resolve and reject method to save in retryQueue. When methods called in processQueue the caller finally gets response
                 //Save methods to queue so that we have a reference of what to do when processQueue activated 
-                //Basically = Save preplanned methods in failedQueue --> return new promise to caller -> refresh finishes --> procesQueue fires --> resolve (retry fires --> caller gets response) OR reject (promise failes --> caller get error)
-                failedQueue.push({ //Save resolve and reject methods for this promise in the queue so they can be called in processQueue after refresh attempt finishes
+                //Basically = Save preplanned methods in retryQueue --> return new promise to caller -> refresh finishes --> procesQueue fires --> resolve (retry fires --> caller gets response) OR reject (promise failes --> caller get error)
+                retryQueue.push({ //Save resolve and reject methods for this promise in the queue so they can be called in processQueue after refresh attempt finishes
                     resolve: () => promResolve(apiFetch(url, options)), //Resolve method for this promise means to resolve promise (promResolve) by doing apiFetch(url, options) (retrying original call)
                     reject: promReject //Reject method for this promise means to reject promise (promReject)
                 });
