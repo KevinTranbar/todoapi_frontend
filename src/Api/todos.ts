@@ -21,11 +21,12 @@ let retryQueue: Array<{ //Req that send while isRefreshing is true will be added
 //retryQueue doesn't hold the actual promises. The promises are just in waiting for processQueue to return value so that a value can be returned to caller
 
 //Flow:
-//1. Wrap every API req in 401 check and some more
+//1. Wrap every API req in 401 check
 //2. Send API req --> if 401, check if problem being resolved (isRefreshing = true)
-//3. Pre-save the method (API req) you needed to retryQueue
-//4. When problem resolved (refreshing = false) --> processQueue
-//5. processQueue --> Activates pre-saved methods in retryQueue --> Retry API req
+//3. If isRefreshing = true --> pre-save resolve/reject methods in retryQueue --> return new Promise to caller (suspends caller)
+//4. First 401 starts refresh --> isRefreshing = true --> updates localStorage with new tokens
+//5. When refresh done --> processQueue fires
+//6. processQueue --> activates pre-saved methods in retryQueue --> retry API reqs --> callers get responses
 
 //How does value from processQueue's reject or resolve, find its way back to rightful promise?
 //Pre-saved method from each promise in wait in retryQueue are connected to respecitve promise
