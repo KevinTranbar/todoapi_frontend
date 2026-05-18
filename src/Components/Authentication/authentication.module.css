@@ -1,0 +1,72 @@
+.container {
+    max-width: 400px;
+    margin: 4rem auto;
+    padding: 2rem;
+    background: #1a1a1a;
+    border-radius: 8px;
+    color: #f0f0f0;
+    font-family: system-ui, sans-serif;
+}
+
+.title {
+    margin: 0 0 1.5rem;
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+.error {
+    background: #4a1a1a;
+    color: #ff8888;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.fieldError {
+    color: #ff8888;
+    font-size: 0.85rem;
+    display: block;
+    margin-top: -0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.input {
+    padding: 0.6rem 0.75rem;
+    font-size: 1rem;
+    border: 1px solid #333;
+    border-radius: 4px;
+    background: #0f0f0f;
+    color: #f0f0f0;
+}
+
+.btnSubmit {
+    padding: 0.75rem;
+    background: #2a7;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.btnSubmit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btnSwitch {
+    padding: 0.5rem;
+    background: transparent;
+    color: #aaa;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-decoration: underline;
+}

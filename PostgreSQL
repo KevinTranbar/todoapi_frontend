@@ -1,0 +1,4 @@
+Start docker DB: docker start todoapi-postgres
+Stop docker DB: docker stop todoapi-postgres
+Remove (data preserved in volume): docker rm todoapi-postgres
+Remove (delete data): docker volume rm todoapi-data

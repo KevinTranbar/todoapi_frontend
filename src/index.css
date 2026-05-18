@@ -1,0 +1,16 @@
+html,
+body,
+#root {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #e5e7eb;
+    background: radial-gradient(circle at top, #182039 0%, #0b1523 45%, #060b14 100%);
+}
+
+* {
+    box-sizing: border-box;
+}
