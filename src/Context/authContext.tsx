@@ -9,6 +9,7 @@ interface AuthContextType { //Shape of context
 }
 
 const AuthContext = createContext<AuthContextType | null>(null); //Create context with default value of null with the shape of AuthContextType interface (token, username, isAuthenticated, login and logout function)
+//Create context in order to share auth state and functions across multiple components without prop drilling
 
 //children of React.ReactNode type means any valid React child
 export function AuthProvider({ children }: { children: React.ReactNode }) { //Object destructuring = Whatever is passed into AuthProvider as arg, take out children from it and use as variable in function
@@ -45,6 +46,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) { //Ob
             {children}
         </AuthContext.Provider>
     ); //Children in return = Renders children extracted with destructuring inside the context box giving all inside the box values and functions
+
+    //"<AuthContext.Provider value={{ token, username, isAuthenticated, login, logout }}> " - Fills context using .Provider method of created context, with values from function --> Gives this filled context to any children
 }
 
 export function useAuth() { //Custom hook to use auth context values/functions in any component (Must be used within AuthProvider)
@@ -52,3 +55,9 @@ export function useAuth() { //Custom hook to use auth context values/functions i
     if (!context) throw new Error("useAuth must be used within an AuthProvider"); //If context is null, it means that useAuth is being used outside of AuthProvider, which is not allowed since it won't have access to the auth context values/functions. Throwing an error helps catch this mistake during development.
     return context;
 }
+
+//useAuth flow:
+//1. Tries to get auth context using useContext hook
+//2. If context is null, it means the place where useAuth is being used is not wrapped in AuthProvider
+
+//useAuth for convience so we don't have to import useContext and AuthContext in every component that needs auth values/functions. Just import useAuth and call it to get access to auth context values/functions. Also provides error handling if used outside of AuthProvider.
