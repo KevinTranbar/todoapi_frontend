@@ -60,4 +60,5 @@ export function useAuth() { //Custom hook to use auth context values/functions i
 //1. Tries to get auth context using useContext hook
 //2. If context is null, it means the place where useAuth is being used is not wrapped in AuthProvider
 
-//useAuth for convience so we don't have to import useContext and AuthContext in every component that needs auth values/functions. Just import useAuth and call it to get access to auth context values/functions. Also provides error handling if used outside of AuthProvider.
+//useAuth for convience so we don't have to import useContext and AuthContext in every component that needs auth values/functions.
+//Just import useAuth and call it to get access to auth context values/functions. Also provides error handling if used outside of AuthProvider.
