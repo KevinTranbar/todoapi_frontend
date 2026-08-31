@@ -62,3 +62,13 @@ export function useAuth() { //Custom hook to use auth context values/functions i
 
 //useAuth for convience so we don't have to import useContext and AuthContext in every component that needs auth values/functions.
 //Just import useAuth and call it to get access to auth context values/functions. Also provides error handling if used outside of AuthProvider.
+
+//DEVNOTES:
+//Först och främst har vi AuthContextType som helt enkelt definerar hur data ska se ut i och med att jag skriver i TypeScript tsx.
+//Därefter skapar vi en kontext som i grund och botten inte har någon faktiskt betydelse ÄNNU.
+//Efteråt har vi en exporterad AuthProvider function som helt enkelt bara hanterar logiken samt definerar olika metoder och states,
+//det är inget inneboende speciellt med den från en annan som räknar ut addition. Däremot i return,
+//ger vi AuthContextens provider våra metoder och states så att de finns i contexten, och detta ger vi till alla children definerade i authprovider,
+//dvs alla i app i main.tsx. Så vad har vi nu. Nu har "fyllt" contexten, eftersom contexten nu innehåller vissa värden och metoder MEN BARA i vissa componenter och dess children.
+//Nu skapar vi en custom hook vilket helt enkelt ger tillgång till alla metoder och states och "rejectar" de som är utanför providerns boundries aka utanför app.
+//Detta gör att vi kan skippa att importera authcontext och usecontext och istället ha en kombination i useAuth
